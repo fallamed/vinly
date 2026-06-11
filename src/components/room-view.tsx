@@ -1,0 +1,155 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { VinylDisc } from "@/components/vinyl-disc";
+import type { NowPlaying } from "@/lib/spotify";
+
+type Member = {
+	id: string;
+	name: string;
+	avatar: string | null;
+	isHost: boolean;
+	isMe: boolean;
+	now: NowPlaying | null;
+};
+
+type RoomState = {
+	room: { id: string; name: string };
+	members: Member[];
+};
+
+export function RoomView({ roomId, roomName }: { roomId: string; roomName: string }) {
+	const [state, setState] = useState<RoomState | null>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [savedUri, setSavedUri] = useState<string | null>(null);
+	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		let stopped = false;
+
+		async function poll() {
+			try {
+				const res = await fetch(`/api/rooms/${roomId}/state`);
+				const json = (await res.json()) as RoomState & { error?: string };
+				if (stopped) return;
+				if (res.ok) {
+					setState(json);
+					setError(null);
+				} else {
+					setError(json.error ?? `errore ${res.status}`);
+				}
+			} catch {
+				if (!stopped) setError("errore di rete");
+			}
+		}
+
+		poll();
+		const id = setInterval(poll, 5000);
+		return () => {
+			stopped = true;
+			clearInterval(id);
+		};
+	}, [roomId]);
+
+	async function saveDisc(member: Member) {
+		const track = member.now?.track;
+		if (!track) return;
+		const res = await fetch("/api/discs", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				trackUri: track.uri,
+				trackName: track.name,
+				artists: track.artists,
+				album: track.album,
+				coverUrl: track.coverUrl,
+				savedFromName: member.isMe ? null : member.name,
+			}),
+		});
+		if (res.ok) {
+			setSavedUri(track.uri);
+			setTimeout(() => setSavedUri(null), 2000);
+		}
+	}
+
+	async function copyInvite() {
+		await navigator.clipboard.writeText(window.location.href);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	}
+
+	return (
+		<div className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
+			<div className="flex items-center justify-between flex-wrap gap-3">
+				<div>
+					<h1 className="text-3xl font-semibold">{roomName}</h1>
+					<p className="text-sm text-[#8A94B8]">
+						{state ? `${state.members.length} in stanza` : "carico la stanza..."}
+					</p>
+				</div>
+				<button
+					onClick={copyInvite}
+					className="rounded-full border border-[#4DD8E6] text-[#4DD8E6] text-sm px-5 py-2 hover:bg-[#4DD8E6]/10"
+				>
+					{copied ? "Link copiato ✓" : "Copia link d'invito"}
+				</button>
+			</div>
+
+			{error && <p className="text-red-400 text-sm">{error}</p>}
+
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
+				{state?.members.map((member) => {
+					const track = member.now?.track ?? null;
+					return (
+						<div
+							key={member.id}
+							className={`flex flex-col items-center gap-3 rounded-2xl bg-[#11152A] border p-6 ${
+								member.isMe ? "border-[#E64DA8]" : "border-[#232A45]"
+							}`}
+						>
+							<p className="text-sm text-[#8A94B8]">
+								{member.isHost && <span className="text-[#E64DA8] mr-1">★</span>}
+								{member.isMe ? "Tu" : member.name}
+								{member.now && (
+									<span className={member.now.playing ? "text-[#4DD8E6]" : "text-[#8A94B8]"}>
+										{member.now.playing ? " · in ascolto" : " · in pausa"}
+									</span>
+								)}
+							</p>
+
+							{member.now && track ? (
+								<>
+									<VinylDisc
+										progressMs={member.now.progressMs}
+										fetchedAt={member.now.fetchedAt}
+										playing={member.now.playing}
+										coverUrl={track.coverUrl}
+										size={170}
+									/>
+									<div className="text-center">
+										<p className="font-medium leading-tight">{track.name}</p>
+										<p className="text-xs text-[#8A94B8] mt-1">{track.artists}</p>
+									</div>
+									<button
+										onClick={() => saveDisc(member)}
+										className="rounded-full border border-[#E64DA8] text-[#E64DA8] text-xs px-4 py-1.5 hover:bg-[#E64DA8]/10"
+									>
+										{savedUri === track.uri ? "Nello scaffale ✓" : "💿 Salva il disco"}
+									</button>
+								</>
+							) : (
+								<>
+									<div className="w-[170px] h-[170px] rounded-full border border-dashed border-[#232A45] flex items-center justify-center">
+										<span className="text-xs text-[#5E6B96]">piatto fermo</span>
+									</div>
+									<p className="text-xs text-[#5E6B96]">nessun disco sul piatto</p>
+								</>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}

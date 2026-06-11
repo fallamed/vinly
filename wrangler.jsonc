@@ -32,6 +32,17 @@
 			"service": "vinly"
 		}
 	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "vinly-db",
+			"database_id": "a458a31a-d0e0-406a-9990-35d04bc89f17"
+		}
+	],
+	"dev": {
+		// Stessa porta del redirect URI registrato su Spotify (127.0.0.1:3000)
+		"port": 3000
+	},
 	"observability": {
 		"enabled": true
 	},

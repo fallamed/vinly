@@ -1,0 +1,7 @@
+# Copy to .dev.vars and fill in the values
+NEXTJS_ENV=development
+
+# Spotify app — https://developer.spotify.com/dashboard
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/auth/callback
