@@ -11,12 +11,19 @@ CREATE TABLE IF NOT EXISTS users (
 	refresh_token TEXT NOT NULL,
 	token_expires_at INTEGER NOT NULL, -- epoch ms
 	session_token TEXT UNIQUE NOT NULL,
-	created_at INTEGER NOT NULL
+	created_at INTEGER NOT NULL,
+	-- ultimo disco visto sul piatto (resta fermo quando non suona nulla)
+	last_track_uri TEXT,
+	last_track_name TEXT,
+	last_artists TEXT,
+	last_album TEXT,
+	last_cover_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS rooms (
-	id TEXT PRIMARY KEY, -- slug random, fa anche da codice invito
+	id TEXT PRIMARY KEY, -- slug random pubblico (URL della stanza)
 	name TEXT NOT NULL,
+	invite_code TEXT, -- segreto: chi ce l'ha entra come membro, non spettatore
 	created_by TEXT NOT NULL REFERENCES users(id),
 	created_at INTEGER NOT NULL
 );

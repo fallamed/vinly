@@ -1,16 +1,11 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 
 import { CreateRoomForm } from "@/components/create-room-form";
 import { TopBar } from "@/components/top-bar";
+import { getDb } from "@/db";
+import { roomMembers, rooms, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
-
-type RoomRow = {
-	id: string;
-	name: string;
-	host_name: string;
-	member_count: number;
-};
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +31,17 @@ export default async function Home() {
 		);
 	}
 
-	const { env } = getCloudflareContext();
-	const { results: rooms } = await env.DB.prepare(
-		`SELECT r.id, r.name, u.display_name AS host_name,
-			(SELECT COUNT(*) FROM room_members m WHERE m.room_id = r.id) AS member_count
-		 FROM rooms r JOIN users u ON u.id = r.created_by
-		 ORDER BY r.created_at DESC LIMIT 50`,
-	).all<RoomRow>();
+	const roomList = await getDb()
+		.select({
+			id: rooms.id,
+			name: rooms.name,
+			hostName: users.displayName,
+			memberCount: sql<number>`(SELECT COUNT(*) FROM ${roomMembers} WHERE ${roomMembers.roomId} = ${rooms.id})`,
+		})
+		.from(rooms)
+		.innerJoin(users, eq(users.id, rooms.createdBy))
+		.orderBy(desc(rooms.createdAt))
+		.limit(50);
 
 	return (
 		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
@@ -51,7 +50,7 @@ export default async function Home() {
 				<div>
 					<h1 className="text-3xl font-semibold mb-1">Il lounge</h1>
 					<p className="text-[#8A94B8] text-sm">
-						{rooms.length === 0
+						{roomList.length === 0
 							? "Nessuna stanza ancora — metti su il primo disco."
 							: "Entra in una stanza o creane una."}
 					</p>
@@ -60,7 +59,7 @@ export default async function Home() {
 				<CreateRoomForm />
 
 				<ul className="flex flex-col gap-3">
-					{rooms.map((room) => (
+					{roomList.map((room) => (
 						<li key={room.id}>
 							<Link
 								href={`/room/${room.id}`}
@@ -68,10 +67,10 @@ export default async function Home() {
 							>
 								<div>
 									<p className="font-medium">{room.name}</p>
-									<p className="text-xs text-[#8A94B8]">di {room.host_name}</p>
+									<p className="text-xs text-[#8A94B8]">di {room.hostName}</p>
 								</div>
 								<span className="text-xs text-[#4DD8E6]">
-									{room.member_count} {room.member_count === 1 ? "ascoltatore" : "ascoltatori"}
+									{room.memberCount} {room.memberCount === 1 ? "ascoltatore" : "ascoltatori"}
 								</span>
 							</Link>
 						</li>

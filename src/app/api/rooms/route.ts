@@ -1,19 +1,26 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { desc, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getDb } from "@/db";
+import { roomMembers, rooms, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { randomSlug } from "@/lib/spotify";
 
 export async function GET() {
-	const { env } = getCloudflareContext();
-	const { results } = await env.DB.prepare(
-		`SELECT r.id, r.name, r.created_at, u.display_name AS host_name,
-			(SELECT COUNT(*) FROM room_members m WHERE m.room_id = r.id) AS member_count
-		 FROM rooms r JOIN users u ON u.id = r.created_by
-		 ORDER BY r.created_at DESC
-		 LIMIT 50`,
-	).all();
-	return NextResponse.json({ rooms: results });
+	const db = getDb();
+	const list = await db
+		.select({
+			id: rooms.id,
+			name: rooms.name,
+			createdAt: rooms.createdAt,
+			hostName: users.displayName,
+			memberCount: sql<number>`(SELECT COUNT(*) FROM ${roomMembers} WHERE ${roomMembers.roomId} = ${rooms.id})`,
+		})
+		.from(rooms)
+		.innerJoin(users, eq(users.id, rooms.createdBy))
+		.orderBy(desc(rooms.createdAt))
+		.limit(50);
+	return NextResponse.json({ rooms: list });
 }
 
 export async function POST(request: NextRequest) {
@@ -26,21 +33,12 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({ error: "nome stanza mancante o troppo lungo" }, { status: 400 });
 	}
 
-	const { env } = getCloudflareContext();
+	const db = getDb();
 	const id = randomSlug(10);
 	const now = Date.now();
-	await env.DB.batch([
-		env.DB.prepare("INSERT INTO rooms (id, name, created_by, created_at) VALUES (?, ?, ?, ?)").bind(
-			id,
-			name,
-			user.id,
-			now,
-		),
-		env.DB.prepare("INSERT INTO room_members (room_id, user_id, joined_at) VALUES (?, ?, ?)").bind(
-			id,
-			user.id,
-			now,
-		),
+	await db.batch([
+		db.insert(rooms).values({ id, name, inviteCode: randomSlug(12), createdBy: user.id, createdAt: now }),
+		db.insert(roomMembers).values({ roomId: id, userId: user.id, joinedAt: now }),
 	]);
 
 	return NextResponse.json({ id });

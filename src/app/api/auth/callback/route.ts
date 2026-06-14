@@ -1,6 +1,8 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/session";
 import { randomSlug } from "@/lib/spotify";
 
@@ -74,30 +76,19 @@ export async function GET(request: NextRequest) {
 	const me = (await meRes.json()) as SpotifyMe;
 
 	const sessionToken = randomSlug(32);
-	await env.DB.prepare(
-		`INSERT INTO users (id, display_name, avatar_url, product, access_token, refresh_token, token_expires_at, session_token, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		 ON CONFLICT(id) DO UPDATE SET
-			display_name = excluded.display_name,
-			avatar_url = excluded.avatar_url,
-			product = excluded.product,
-			access_token = excluded.access_token,
-			refresh_token = excluded.refresh_token,
-			token_expires_at = excluded.token_expires_at,
-			session_token = excluded.session_token`,
-	)
-		.bind(
-			me.id,
-			me.display_name,
-			me.images?.[0]?.url ?? null,
-			me.product,
-			tokens.access_token,
-			tokens.refresh_token,
-			Date.now() + tokens.expires_in * 1000,
-			sessionToken,
-			Date.now(),
-		)
-		.run();
+	const profile = {
+		displayName: me.display_name,
+		avatarUrl: me.images?.[0]?.url ?? null,
+		product: me.product,
+		accessToken: tokens.access_token,
+		refreshToken: tokens.refresh_token,
+		tokenExpiresAt: Date.now() + tokens.expires_in * 1000,
+		sessionToken,
+	};
+	await getDb()
+		.insert(users)
+		.values({ id: me.id, createdAt: Date.now(), ...profile })
+		.onConflictDoUpdate({ target: users.id, set: profile });
 
 	const res = NextResponse.redirect(new URL("/", request.url));
 	res.cookies.set(SESSION_COOKIE, sessionToken, {

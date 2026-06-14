@@ -15,12 +15,12 @@ export function TopBar({ user }: { user: DbUser }) {
 				<Link href="/library" className="opacity-80 hover:opacity-100 hover:text-[#4DD8E6]">
 					Libreria
 				</Link>
-				{user.avatar_url ? (
+				{user.avatarUrl ? (
 					// eslint-disable-next-line @next/next/no-img-element
-					<img src={user.avatar_url} alt={user.display_name} className="w-8 h-8 rounded-full" />
+					<img src={user.avatarUrl} alt={user.displayName} className="w-8 h-8 rounded-full" />
 				) : (
 					<span className="w-8 h-8 rounded-full bg-[#E64DA8] flex items-center justify-center text-xs">
-						{user.display_name.slice(0, 2).toUpperCase()}
+						{user.displayName.slice(0, 2).toUpperCase()}
 					</span>
 				)}
 			</nav>

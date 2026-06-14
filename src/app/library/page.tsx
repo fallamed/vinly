@@ -1,18 +1,10 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { TopBar } from "@/components/top-bar";
+import { getDb } from "@/db";
+import { savedDiscs } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
-
-type DiscRow = {
-	track_uri: string;
-	track_name: string;
-	artists: string;
-	album: string | null;
-	cover_url: string | null;
-	saved_from_name: string | null;
-	saved_at: number;
-};
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +17,12 @@ export default async function LibraryPage() {
 	const user = await getCurrentUser();
 	if (!user) redirect("/");
 
-	const { env } = getCloudflareContext();
-	const { results: discs } = await env.DB.prepare(
-		"SELECT * FROM saved_discs WHERE user_id = ? ORDER BY saved_at DESC LIMIT 200",
-	)
-		.bind(user.id)
-		.all<DiscRow>();
+	const discs = await getDb()
+		.select()
+		.from(savedDiscs)
+		.where(eq(savedDiscs.userId, user.id))
+		.orderBy(desc(savedDiscs.savedAt))
+		.limit(200);
 
 	return (
 		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
@@ -47,14 +39,14 @@ export default async function LibraryPage() {
 
 				<div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-5">
 					{discs.map((disc) => {
-						const url = spotifyUrl(disc.track_uri);
+						const url = spotifyUrl(disc.trackUri);
 						const cover = (
 							<div className="relative">
-								{disc.cover_url ? (
+								{disc.coverUrl ? (
 									// eslint-disable-next-line @next/next/no-img-element
 									<img
-										src={disc.cover_url}
-										alt={disc.track_name}
+										src={disc.coverUrl}
+										alt={disc.trackName}
 										className="w-full aspect-square rounded-xl object-cover"
 									/>
 								) : (
@@ -64,7 +56,7 @@ export default async function LibraryPage() {
 							</div>
 						);
 						return (
-							<div key={disc.track_uri} className="flex flex-col gap-2">
+							<div key={disc.trackUri} className="flex flex-col gap-2">
 								{url ? (
 									<a href={url} target="_blank" rel="noreferrer" className="hover:opacity-90">
 										{cover}
@@ -72,11 +64,11 @@ export default async function LibraryPage() {
 								) : (
 									cover
 								)}
-								<p className="font-medium text-sm leading-tight">{disc.track_name}</p>
+								<p className="font-medium text-sm leading-tight">{disc.trackName}</p>
 								<p className="text-xs text-[#8A94B8] leading-tight">{disc.artists}</p>
-								{disc.saved_from_name && (
+								{disc.savedFromName && (
 									<p className="text-xs text-[#4DD8E6]">
-										dallo scaffale di {disc.saved_from_name}
+										dallo scaffale di {disc.savedFromName}
 									</p>
 								)}
 							</div>

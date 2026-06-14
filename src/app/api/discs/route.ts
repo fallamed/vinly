@@ -1,6 +1,7 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getDb } from "@/db";
+import { savedDiscs } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 
 type SaveDiscBody = {
@@ -21,23 +22,18 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({ error: "trackUri e trackName obbligatori" }, { status: 400 });
 	}
 
-	const { env } = getCloudflareContext();
-	await env.DB.prepare(
-		`INSERT OR REPLACE INTO saved_discs
-			(user_id, track_uri, track_name, artists, album, cover_url, saved_from_name, saved_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-	)
-		.bind(
-			user.id,
-			body.trackUri,
-			body.trackName,
-			body.artists ?? "",
-			body.album ?? null,
-			body.coverUrl ?? null,
-			body.savedFromName ?? null,
-			Date.now(),
-		)
-		.run();
+	const disc = {
+		trackName: body.trackName,
+		artists: body.artists ?? "",
+		album: body.album ?? null,
+		coverUrl: body.coverUrl ?? null,
+		savedFromName: body.savedFromName ?? null,
+		savedAt: Date.now(),
+	};
+	await getDb()
+		.insert(savedDiscs)
+		.values({ userId: user.id, trackUri: body.trackUri, ...disc })
+		.onConflictDoUpdate({ target: [savedDiscs.userId, savedDiscs.trackUri], set: disc });
 
 	return NextResponse.json({ saved: true });
 }

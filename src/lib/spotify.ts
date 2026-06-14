@@ -1,4 +1,8 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { eq } from "drizzle-orm";
+
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
 
 import type { DbUser } from "./session";
 
@@ -37,7 +41,7 @@ type SpotifyCurrentlyPlaying = {
 
 /** Restituisce un access token valido, rinfrescandolo (e persistendolo) se in scadenza. */
 export async function getValidAccessToken(user: DbUser): Promise<string | null> {
-	if (user.token_expires_at - Date.now() > 60_000) return user.access_token;
+	if (user.tokenExpiresAt - Date.now() > 60_000) return user.accessToken;
 
 	const { env } = getCloudflareContext();
 	const res = await fetch("https://accounts.spotify.com/api/token", {
@@ -45,7 +49,7 @@ export async function getValidAccessToken(user: DbUser): Promise<string | null> 
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		body: new URLSearchParams({
 			grant_type: "refresh_token",
-			refresh_token: user.refresh_token,
+			refresh_token: user.refreshToken,
 			client_id: env.SPOTIFY_CLIENT_ID,
 		}),
 	});
@@ -54,15 +58,14 @@ export async function getValidAccessToken(user: DbUser): Promise<string | null> 
 	const tokens = (await res.json()) as TokenResponse;
 	const expiresAt = Date.now() + tokens.expires_in * 1000;
 	// Il refresh token con PKCE ruota: salvare sempre quello nuovo se presente.
-	const newRefresh = tokens.refresh_token ?? user.refresh_token;
-	await env.DB.prepare(
-		"UPDATE users SET access_token = ?, refresh_token = ?, token_expires_at = ? WHERE id = ?",
-	)
-		.bind(tokens.access_token, newRefresh, expiresAt, user.id)
-		.run();
+	const newRefresh = tokens.refresh_token ?? user.refreshToken;
+	await getDb()
+		.update(users)
+		.set({ accessToken: tokens.access_token, refreshToken: newRefresh, tokenExpiresAt: expiresAt })
+		.where(eq(users.id, user.id));
 
-	user.access_token = tokens.access_token;
-	user.token_expires_at = expiresAt;
+	user.accessToken = tokens.access_token;
+	user.tokenExpiresAt = expiresAt;
 	return tokens.access_token;
 }
 

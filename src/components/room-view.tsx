@@ -11,15 +11,25 @@ type Member = {
 	avatar: string | null;
 	isHost: boolean;
 	isMe: boolean;
-	now: NowPlaying | null;
+	now: (NowPlaying & { lastKnown?: boolean }) | null;
 };
 
 type RoomState = {
 	room: { id: string; name: string };
+	viewerIsMember: boolean;
+	inviteUrl: string | null;
 	members: Member[];
 };
 
-export function RoomView({ roomId, roomName }: { roomId: string; roomName: string }) {
+export function RoomView({
+	roomId,
+	roomName,
+	isMember,
+}: {
+	roomId: string;
+	roomName: string;
+	isMember: boolean;
+}) {
 	const [state, setState] = useState<RoomState | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [savedUri, setSavedUri] = useState<string | null>(null);
@@ -74,7 +84,8 @@ export function RoomView({ roomId, roomName }: { roomId: string; roomName: strin
 	}
 
 	async function copyInvite() {
-		await navigator.clipboard.writeText(window.location.href);
+		if (!state?.inviteUrl) return;
+		await navigator.clipboard.writeText(state.inviteUrl);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	}
@@ -85,15 +96,22 @@ export function RoomView({ roomId, roomName }: { roomId: string; roomName: strin
 				<div>
 					<h1 className="text-3xl font-semibold">{roomName}</h1>
 					<p className="text-sm text-[#8A94B8]">
-						{state ? `${state.members.length} in stanza` : "carico la stanza..."}
+						{state ? `${state.members.length} sul piatto` : "carico la stanza..."}
+						{!isMember && <span className="text-[#E64DA8]"> · sei spettatore</span>}
 					</p>
 				</div>
-				<button
-					onClick={copyInvite}
-					className="rounded-full border border-[#4DD8E6] text-[#4DD8E6] text-sm px-5 py-2 hover:bg-[#4DD8E6]/10"
-				>
-					{copied ? "Link copiato ✓" : "Copia link d'invito"}
-				</button>
+				{isMember ? (
+					<button
+						onClick={copyInvite}
+						className="rounded-full border border-[#4DD8E6] text-[#4DD8E6] text-sm px-5 py-2 hover:bg-[#4DD8E6]/10"
+					>
+						{copied ? "Link copiato ✓" : "Copia link d'invito"}
+					</button>
+				) : (
+					<p className="text-xs text-[#8A94B8] max-w-60 text-right">
+						Stai solo guardando: per mettere il tuo disco sul piatto serve un link d&apos;invito.
+					</p>
+				)}
 			</div>
 
 			{error && <p className="text-red-400 text-sm">{error}</p>}
@@ -113,7 +131,11 @@ export function RoomView({ roomId, roomName }: { roomId: string; roomName: strin
 								{member.isMe ? "Tu" : member.name}
 								{member.now && (
 									<span className={member.now.playing ? "text-[#4DD8E6]" : "text-[#8A94B8]"}>
-										{member.now.playing ? " · in ascolto" : " · in pausa"}
+										{member.now.playing
+											? " · in ascolto"
+											: member.now.lastKnown
+												? " · ultimo ascolto"
+												: " · in pausa"}
 									</span>
 								)}
 							</p>

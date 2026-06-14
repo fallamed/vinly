@@ -36,7 +36,9 @@
 		{
 			"binding": "DB",
 			"database_name": "vinly-db",
-			"database_id": "a458a31a-d0e0-406a-9990-35d04bc89f17"
+			"database_id": "a458a31a-d0e0-406a-9990-35d04bc89f17",
+			// Migrazioni generate da drizzle-kit (npx drizzle-kit generate)
+			"migrations_dir": "drizzle"
 		}
 	],
 	"dev": {
