@@ -34,6 +34,7 @@ export function RoomView({
 	const [error, setError] = useState<string | null>(null);
 	const [savedUri, setSavedUri] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
+	const [confirmDelete, setConfirmDelete] = useState(false);
 
 	useEffect(() => {
 		let stopped = false;
@@ -61,6 +62,8 @@ export function RoomView({
 			clearInterval(id);
 		};
 	}, [roomId]);
+
+	const isHost = state?.members.find((m) => m.isMe)?.isHost ?? false;
 
 	async function saveDisc(member: Member) {
 		const track = member.now?.track;
@@ -90,9 +93,19 @@ export function RoomView({
 		setTimeout(() => setCopied(false), 2000);
 	}
 
+	async function leaveRoom() {
+		const res = await fetch(`/api/rooms/${roomId}/members/me`, { method: "DELETE" });
+		if (res.ok) window.location.href = "/";
+	}
+
+	async function deleteRoom() {
+		const res = await fetch(`/api/rooms/${roomId}`, { method: "DELETE" });
+		if (res.ok) window.location.href = "/";
+	}
+
 	return (
 		<div className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
-			<div className="flex items-center justify-between flex-wrap gap-3">
+			<div className="flex items-start justify-between flex-wrap gap-4">
 				<div>
 					<h1 className="text-3xl font-semibold">{roomName}</h1>
 					<p className="text-sm text-[#8A94B8]">
@@ -100,14 +113,52 @@ export function RoomView({
 						{!isMember && <span className="text-[#E64DA8]"> · sei spettatore</span>}
 					</p>
 				</div>
-				{isMember ? (
-					<button
-						onClick={copyInvite}
-						className="rounded-full border border-[#4DD8E6] text-[#4DD8E6] text-sm px-5 py-2 hover:bg-[#4DD8E6]/10"
-					>
-						{copied ? "Link copiato ✓" : "Copia link d'invito"}
-					</button>
-				) : (
+
+				{isMember && (
+					<div className="flex items-center gap-3 flex-wrap">
+						<button
+							onClick={copyInvite}
+							className="rounded-full border border-[#4DD8E6] text-[#4DD8E6] text-sm px-5 py-2 hover:bg-[#4DD8E6]/10"
+						>
+							{copied ? "Link copiato ✓" : "Copia link d'invito"}
+						</button>
+
+						{isHost ? (
+							confirmDelete ? (
+								<div className="flex items-center gap-2">
+									<button
+										onClick={deleteRoom}
+										className="rounded-full bg-red-500/10 border border-red-500 text-red-400 text-sm px-4 py-2 hover:bg-red-500/20"
+									>
+										Sì, elimina
+									</button>
+									<button
+										onClick={() => setConfirmDelete(false)}
+										className="rounded-full border border-[#232A45] text-[#8A94B8] text-sm px-4 py-2 hover:border-[#4DD8E6]"
+									>
+										Annulla
+									</button>
+								</div>
+							) : (
+								<button
+									onClick={() => setConfirmDelete(true)}
+									className="rounded-full border border-[#3A2A2A] text-[#8A5050] text-sm px-5 py-2 hover:border-red-500 hover:text-red-400"
+								>
+									Elimina stanza
+								</button>
+							)
+						) : (
+							<button
+								onClick={leaveRoom}
+								className="rounded-full border border-[#3A2A2A] text-[#8A5050] text-sm px-5 py-2 hover:border-red-500 hover:text-red-400"
+							>
+								Lascia la stanza
+							</button>
+						)}
+					</div>
+				)}
+
+				{!isMember && (
 					<p className="text-xs text-[#8A94B8] max-w-60 text-right">
 						Stai solo guardando: per mettere il tuo disco sul piatto serve un link d&apos;invito.
 					</p>

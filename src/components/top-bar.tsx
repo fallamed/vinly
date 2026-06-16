@@ -15,7 +15,8 @@ export function TopBar({ user }: { user: DbUser }) {
 				<Link href="/library" className="opacity-80 hover:opacity-100 hover:text-[#4DD8E6]">
 					Libreria
 				</Link>
-				<Link href="/account" className="hover:opacity-80">
+				<Link href="/account" className="flex items-center gap-2 hover:opacity-80">
+					{user.username && <span className="text-xs text-[#8A94B8]">@{user.username}</span>}
 					{user.avatarUrl ? (
 						// eslint-disable-next-line @next/next/no-img-element
 						<img src={user.avatarUrl} alt={user.displayName} className="w-8 h-8 rounded-full" />
