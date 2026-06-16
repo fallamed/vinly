@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
 	refreshToken: text("refresh_token").notNull(),
 	tokenExpiresAt: integer("token_expires_at").notNull(), // epoch ms
 	sessionToken: text("session_token").notNull().unique(),
+	username: text("username").unique(),
 	createdAt: integer("created_at").notNull(),
 	// ultimo disco visto sul piatto (resta fermo quando non suona nulla)
 	lastTrackUri: text("last_track_uri"),

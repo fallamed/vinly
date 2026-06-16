@@ -55,7 +55,7 @@ export function RoomView({
 		}
 
 		poll();
-		const id = setInterval(poll, 5000);
+		const id = setInterval(poll, 25000);
 		return () => {
 			stopped = true;
 			clearInterval(id);

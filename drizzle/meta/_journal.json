@@ -8,6 +8,13 @@
       "when": 1781212747311,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781610286960,
+      "tag": "0001_striped_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

@@ -68,7 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 			return {
 				id: member.id,
-				name: member.displayName,
+				name: member.username ?? member.displayName,
 				avatar: member.avatarUrl,
 				isHost: member.id === room.createdBy,
 				isMe: member.id === viewer.id,

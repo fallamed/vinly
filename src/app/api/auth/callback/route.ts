@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getDb } from "@/db";
@@ -90,7 +91,9 @@ export async function GET(request: NextRequest) {
 		.values({ id: me.id, createdAt: Date.now(), ...profile })
 		.onConflictDoUpdate({ target: users.id, set: profile });
 
-	const res = NextResponse.redirect(new URL("/", request.url));
+	const saved = await getDb().select({ username: users.username }).from(users).where(eq(users.id, me.id)).get();
+	const redirectPath = saved?.username ? "/" : "/setup";
+	const res = NextResponse.redirect(new URL(redirectPath, request.url));
 	res.cookies.set(SESSION_COOKIE, sessionToken, {
 		httpOnly: true,
 		sameSite: "lax",
