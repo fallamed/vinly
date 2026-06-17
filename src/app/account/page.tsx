@@ -15,7 +15,7 @@ export default async function AccountPage() {
 	if (!user) redirect("/");
 
 	return (
-		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
+		<main className="min-h-screen bg-[#101838] text-[#E6EAF5] font-sans">
 			<TopBar user={user} />
 			<div className="max-w-lg mx-auto px-6 py-12 flex flex-col gap-10">
 				<div className="flex items-center gap-5">

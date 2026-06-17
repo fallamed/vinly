@@ -14,7 +14,7 @@ export default async function Home() {
 
 	if (!user) {
 		return (
-			<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] flex flex-col items-center justify-center gap-6 font-sans px-6">
+			<main className="min-h-screen bg-[#101838] text-[#E6EAF5] flex flex-col items-center justify-center gap-6 font-sans px-6">
 				<h1 className="text-4xl font-semibold">
 					<span className="text-[#E64DA8]">◉</span> Vinly
 				</h1>
@@ -58,7 +58,7 @@ export default async function Home() {
 	}
 
 	return (
-		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
+		<main className="min-h-screen bg-[#101838] text-[#E6EAF5] font-sans">
 			<TopBar user={user} />
 			<div className="vinly-dots max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
 				<div className="flex flex-col gap-4">

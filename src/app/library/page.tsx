@@ -25,7 +25,7 @@ export default async function LibraryPage() {
 		.limit(200);
 
 	return (
-		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
+		<main className="min-h-screen bg-[#101838] text-[#E6EAF5] font-sans">
 			<TopBar user={user} />
 			<div className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
 				<div>

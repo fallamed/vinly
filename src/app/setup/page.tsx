@@ -11,7 +11,7 @@ export default async function SetupPage() {
 	if (user.username) redirect("/");
 
 	return (
-		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans flex items-center justify-center px-6">
+		<main className="min-h-screen bg-[#101838] text-[#E6EAF5] font-sans flex items-center justify-center px-6">
 			<div className="w-full max-w-sm flex flex-col gap-8">
 				<div>
 					<p className="text-[#E64DA8] text-2xl mb-3">◉ Vinly</p>

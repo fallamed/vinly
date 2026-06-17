@@ -47,7 +47,7 @@ export default async function RoomPage({
 	}
 
 	return (
-		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
+		<main className="min-h-screen bg-[#101838] text-[#E6EAF5] font-sans">
 			<TopBar user={user} />
 			<RoomView roomId={room.id} roomName={room.name} isMember={isMember} />
 		</main>
