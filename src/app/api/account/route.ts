@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
+import { AUTH_NEXT_COOKIE, safeNextPath } from "@/lib/auth-next";
 import { getCurrentUser } from "@/lib/session";
 
 export async function PATCH(request: Request) {
@@ -21,8 +23,13 @@ export async function PATCH(request: Request) {
 
 	try {
 		await getDb().update(users).set({ username: raw }).where(eq(users.id, user.id));
-		return NextResponse.json({ ok: true });
 	} catch {
 		return NextResponse.json({ error: "username già in uso" }, { status: 409 });
 	}
+
+	const jar = await cookies();
+	const next = safeNextPath(jar.get(AUTH_NEXT_COOKIE)?.value) ?? "/";
+	const res = NextResponse.json({ ok: true, next });
+	res.cookies.delete(AUTH_NEXT_COOKIE);
+	return res;
 }

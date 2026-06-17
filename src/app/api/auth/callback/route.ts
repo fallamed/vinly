@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
+import { AUTH_NEXT_COOKIE, safeNextPath } from "@/lib/auth-next";
 import { SESSION_COOKIE } from "@/lib/session";
 import { randomSlug } from "@/lib/spotify";
 
@@ -92,8 +93,12 @@ export async function GET(request: NextRequest) {
 		.onConflictDoUpdate({ target: users.id, set: profile });
 
 	const saved = await getDb().select({ username: users.username }).from(users).where(eq(users.id, me.id)).get();
-	const redirectPath = saved?.username ? "/" : "/setup";
+	const nextPath = safeNextPath(request.cookies.get(AUTH_NEXT_COOKIE)?.value);
+	// Se manca lo username, vai prima a /setup: il cookie 'next' sopravvive
+	// fino al salvataggio dell'username, dopodiché il client redirige.
+	const redirectPath = saved?.username ? (nextPath ?? "/") : "/setup";
 	const res = NextResponse.redirect(new URL(redirectPath, request.url));
+	if (saved?.username && nextPath) res.cookies.delete(AUTH_NEXT_COOKIE);
 	res.cookies.set(SESSION_COOKIE, sessionToken, {
 		httpOnly: true,
 		sameSite: "lax",

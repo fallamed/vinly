@@ -16,10 +16,10 @@ export function SetupForm() {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ username: value }),
 		});
-		const json = (await res.json()) as { ok?: boolean; error?: string };
+		const json = (await res.json()) as { ok?: boolean; next?: string; error?: string };
 		setLoading(false);
 		if (res.ok) {
-			window.location.href = "/";
+			window.location.href = json.next ?? "/";
 		} else {
 			setError(json.error ?? "errore sconosciuto");
 		}

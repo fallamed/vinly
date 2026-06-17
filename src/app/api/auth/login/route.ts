@@ -1,6 +1,8 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { AUTH_NEXT_COOKIE, safeNextPath } from "@/lib/auth-next";
+
 const SCOPES = [
 	"user-read-private",
 	"user-read-email",
@@ -44,5 +46,9 @@ export async function GET(request: NextRequest) {
 	const cookieOpts = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 600 } as const;
 	res.cookies.set("pkce_verifier", verifier, cookieOpts);
 	res.cookies.set("oauth_state", state, cookieOpts);
+
+	// Conserva l'eventuale destinazione (es. invito a una stanza) per tutto il flusso di login.
+	const next = safeNextPath(request.nextUrl.searchParams.get("next"));
+	if (next) res.cookies.set(AUTH_NEXT_COOKIE, next, cookieOpts);
 	return res;
 }

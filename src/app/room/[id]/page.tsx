@@ -19,7 +19,11 @@ export default async function RoomPage({
 	const { id } = await params;
 	const { invite } = await searchParams;
 	const user = await getCurrentUser();
-	if (!user) redirect("/");
+	if (!user) {
+		// Conserva l'invito attraverso il login.
+		const next = invite ? `/room/${id}?invite=${invite}` : `/room/${id}`;
+		redirect(`/api/auth/login?next=${encodeURIComponent(next)}`);
+	}
 
 	const db = getDb();
 	const room = await db.select().from(rooms).where(eq(rooms.id, id)).get();
