@@ -11,8 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev        # Next.js dev server at localhost:3000 (Node runtime, not Workers)
 npm run lint       # ESLint (next/core-web-vitals + next/typescript)
-npm run build      # opennextjs-cloudflare build (the one Workers Builds runs; bundles into .open-next/)
-npm run build:next # next build (raw Next bundle, debug only)
+npm run build      # next build
 npm run preview    # Build with OpenNext + run on the local Cloudflare Workers runtime
 npm run deploy     # Build with OpenNext + deploy to Cloudflare
 npm run cf-typegen # Regenerate cloudflare-env.d.ts from wrangler.jsonc bindings
