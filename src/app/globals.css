@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-	--background: #ffffff;
-	--foreground: #171717;
+	--background: #0B0E1A;
+	--foreground: #E6EAF5;
 }
 
 @theme inline {
@@ -12,15 +12,53 @@
 	--font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
-}
-
 body {
 	background: var(--background);
 	color: var(--foreground);
 	font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Dot pattern sul main */
+.vinly-dots {
+	background-image: radial-gradient(rgba(77, 216, 230, 0.06) 1px, transparent 1px);
+	background-size: 22px 22px;
+}
+
+/* Glow per il titolo della stanza */
+.vinly-title-glow {
+	text-shadow: 0 0 24px rgba(77, 216, 230, 0.45), 0 0 48px rgba(77, 216, 230, 0.22);
+}
+
+/* LED pulsante per "in ascolto" */
+@keyframes vinly-led {
+	0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor, 0 0 12px currentColor; }
+	50% { opacity: 0.45; box-shadow: 0 0 3px currentColor; }
+}
+.vinly-led {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 9999px;
+	background: currentColor;
+	margin-right: 6px;
+	vertical-align: 0;
+	animation: vinly-led 1.6s ease-in-out infinite;
+}
+.vinly-led-still { animation: none; opacity: 0.4; box-shadow: none; }
+
+/* Glow del disco quando suona */
+.vinly-disc-glow {
+	box-shadow: 0 0 32px rgba(77, 216, 230, 0.18), 0 0 64px rgba(230, 77, 168, 0.12);
+}
+
+/* Stella di sfondo per la card host (opaca, decorativa) */
+.vinly-host-star {
+	position: absolute;
+	right: -18px;
+	top: -10px;
+	font-size: 180px;
+	line-height: 1;
+	color: rgba(230, 77, 168, 0.06);
+	pointer-events: none;
+	user-select: none;
 }

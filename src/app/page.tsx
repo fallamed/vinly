@@ -60,10 +60,10 @@ export default async function Home() {
 	return (
 		<main className="min-h-screen bg-[#0B0E1A] text-[#E6EAF5] font-sans">
 			<TopBar user={user} />
-			<div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
+			<div className="vinly-dots max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
 				<div className="flex flex-col gap-4">
 					<div>
-						<h1 className="text-3xl font-semibold mb-1">Il lounge</h1>
+						<h1 className="text-3xl font-semibold mb-1 vinly-title-glow">Il lounge</h1>
 						<p className="text-[#8A94B8] text-sm">Crea una stanza o entra in una esistente.</p>
 					</div>
 					<CreateRoomForm />

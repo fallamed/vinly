@@ -33,7 +33,7 @@ export function VinylDisc({ progressMs, fetchedAt, playing, coverUrl, size = 224
 	return (
 		<div
 			ref={ref}
-			className="relative rounded-full bg-[#0d1020] will-change-transform"
+			className={`relative rounded-full bg-[#0d1020] will-change-transform ${playing ? "vinly-disc-glow" : ""}`}
 			style={{ width: size, height: size }}
 		>
 			{[

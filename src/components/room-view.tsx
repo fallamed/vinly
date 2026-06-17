@@ -104,10 +104,10 @@ export function RoomView({
 	}
 
 	return (
-		<div className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
+		<div className="vinly-dots max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
 			<div className="flex items-start justify-between flex-wrap gap-4">
 				<div>
-					<h1 className="text-3xl font-semibold">{roomName}</h1>
+					<h1 className="text-3xl font-semibold vinly-title-glow">{roomName}</h1>
 					<p className="text-sm text-[#8A94B8]">
 						{state ? `${state.members.length} sul piatto` : "carico la stanza..."}
 						{!isMember && <span className="text-[#E64DA8]"> · sei spettatore</span>}
@@ -168,25 +168,42 @@ export function RoomView({
 			{error && <p className="text-red-400 text-sm">{error}</p>}
 
 			<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
-				{state?.members.map((member) => {
+				{state?.members.map((member, idx) => {
 					const track = member.now?.track ?? null;
+					const playing = Boolean(member.now?.playing);
+					// Varianti del bottone "Salva il disco" — alternate tra le card.
+					const tones = [
+						{ border: "border-[#4DD8E6]", text: "text-[#4DD8E6]", hover: "hover:bg-[#4DD8E6]/10" },
+						{ border: "border-[#E64DA8]", text: "text-[#E64DA8]", hover: "hover:bg-[#E64DA8]/10" },
+						{ border: "border-[#E8A04C]", text: "text-[#E8A04C]", hover: "hover:bg-[#E8A04C]/10" },
+					] as const;
+					const tone = tones[idx % tones.length];
+					const statusColor = playing
+						? "text-[#4DD8E6]"
+						: member.now?.lastKnown
+							? "text-[#8A94B8]"
+							: "text-[#8A94B8]";
+
 					return (
 						<div
 							key={member.id}
-							className={`flex flex-col items-center gap-3 rounded-2xl bg-[#11152A] border p-6 ${
-								member.isMe ? "border-[#E64DA8]" : "border-[#232A45]"
+							className={`relative overflow-hidden flex flex-col items-center gap-3 rounded-2xl bg-[#11152A] border p-6 ${
+								member.isMe ? "border-[#E64DA8] vinly-disc-glow" : "border-[#232A45]"
 							}`}
 						>
-							<p className="text-sm text-[#8A94B8]">
+							{member.isHost && <span aria-hidden className="vinly-host-star">★</span>}
+							<p className="relative text-sm text-[#8A94B8]">
 								{member.isHost && <span className="text-[#E64DA8] mr-1">★</span>}
 								{member.isMe ? "Tu" : member.name}
 								{member.now && (
-									<span className={member.now.playing ? "text-[#4DD8E6]" : "text-[#8A94B8]"}>
-										{member.now.playing
-											? " · in ascolto"
+									<span className={statusColor}>
+										{" · "}
+										<span className={`vinly-led ${playing ? "" : "vinly-led-still"}`} />
+										{playing
+											? "in ascolto"
 											: member.now.lastKnown
-												? " · ultimo ascolto"
-												: " · in pausa"}
+												? "ultimo ascolto"
+												: "in pausa"}
 									</span>
 								)}
 							</p>
@@ -200,13 +217,13 @@ export function RoomView({
 										coverUrl={track.coverUrl}
 										size={170}
 									/>
-									<div className="text-center">
+									<div className="relative text-center">
 										<p className="font-medium leading-tight">{track.name}</p>
 										<p className="text-xs text-[#8A94B8] mt-1">{track.artists}</p>
 									</div>
 									<button
 										onClick={() => saveDisc(member)}
-										className="rounded-full border border-[#E64DA8] text-[#E64DA8] text-xs px-4 py-1.5 hover:bg-[#E64DA8]/10"
+										className={`relative rounded-full border ${tone.border} ${tone.text} ${tone.hover} text-xs px-4 py-1.5`}
 									>
 										{savedUri === track.uri ? "Nello scaffale ✓" : "💿 Salva il disco"}
 									</button>
