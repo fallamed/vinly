@@ -107,3 +107,65 @@ export function randomSlug(length = 10): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(length));
 	return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
+
+export type PlaybackAction = "play" | "pause" | "next" | "previous" | "seek";
+
+export type ControlResult =
+	| { ok: true }
+	| { ok: false; reason: "no-token" | "no-device" | "premium-required" | "error"; status: number };
+
+/**
+ * Controlla la riproduzione sul dispositivo Spotify attivo dell'utente (Connect).
+ * 404 = nessun dispositivo attivo; 403 = di solito serve Premium o azione non consentita.
+ */
+export async function controlPlayback(
+	user: DbUser,
+	action: PlaybackAction,
+	opts: { uri?: string; positionMs?: number } = {},
+): Promise<ControlResult> {
+	const token = await getValidAccessToken(user);
+	if (!token) return { ok: false, reason: "no-token", status: 401 };
+
+	let url: string;
+	let method: "PUT" | "POST";
+	let body: string | undefined;
+
+	switch (action) {
+		case "play":
+			url = "https://api.spotify.com/v1/me/player/play";
+			method = "PUT";
+			body = JSON.stringify({
+				...(opts.uri ? { uris: [opts.uri] } : {}),
+				...(opts.positionMs != null ? { position_ms: opts.positionMs } : {}),
+			});
+			break;
+		case "pause":
+			url = "https://api.spotify.com/v1/me/player/pause";
+			method = "PUT";
+			break;
+		case "seek":
+			url = `https://api.spotify.com/v1/me/player/seek?position_ms=${opts.positionMs ?? 0}`;
+			method = "PUT";
+			break;
+		case "next":
+			url = "https://api.spotify.com/v1/me/player/next";
+			method = "POST";
+			break;
+		case "previous":
+			url = "https://api.spotify.com/v1/me/player/previous";
+			method = "POST";
+			break;
+	}
+
+	const res = await fetch(url, {
+		method,
+		headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+		...(body ? { body } : {}),
+	});
+
+	// Spotify risponde 204 (o 202) in caso di successo, senza corpo.
+	if (res.ok) return { ok: true };
+	if (res.status === 404) return { ok: false, reason: "no-device", status: 404 };
+	if (res.status === 403) return { ok: false, reason: "premium-required", status: 403 };
+	return { ok: false, reason: "error", status: res.status };
+}
