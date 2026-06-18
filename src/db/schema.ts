@@ -39,6 +39,7 @@ export const roomMembers = sqliteTable(
 			.notNull()
 			.references(() => users.id),
 		joinedAt: integer("joined_at").notNull(),
+		lastSeenAt: integer("last_seen_at"), // heartbeat: aggiornato a ogni poll della stanza
 	},
 	(t) => [primaryKey({ columns: [t.roomId, t.userId] })],
 );

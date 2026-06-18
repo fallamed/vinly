@@ -1,0 +1,1 @@
+ALTER TABLE `room_members` ADD `last_seen_at` integer;

@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { getDb } from "@/db";
@@ -18,8 +18,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 	const room = await db.select().from(rooms).where(eq(rooms.id, id)).get();
 	if (!room) return NextResponse.json({ error: "stanza inesistente" }, { status: 404 });
 
+	const nowMs = Date.now();
+	const LIVE_WINDOW_MS = 60_000;
+
 	const memberRows = await db
-		.select({ user: users })
+		.select({ user: users, lastSeenAt: roomMembers.lastSeenAt })
 		.from(roomMembers)
 		.innerJoin(users, eq(users.id, roomMembers.userId))
 		.where(eq(roomMembers.roomId, id))
@@ -28,6 +31,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 	const members = memberRows.map((row) => row.user);
 
 	const viewerIsMember = members.some((m) => m.id === viewer.id);
+
+	// Heartbeat: registra che il viewer (se membro) è presente proprio ora,
+	// così è incluso nel conteggio dei live anche al primo poll.
+	if (viewerIsMember) {
+		await db
+			.update(roomMembers)
+			.set({ lastSeenAt: nowMs })
+			.where(and(eq(roomMembers.roomId, id), eq(roomMembers.userId, viewer.id)));
+	}
+
+	// Un membro è "live" se ha pollato di recente; il viewer lo è sempre adesso.
+	const isLive = (userId: string, lastSeenAt: number | null) =>
+		userId === viewer.id || (lastSeenAt != null && nowMs - lastSeenAt < LIVE_WINDOW_MS);
+	const lastSeenByUser = new Map(memberRows.map((row) => [row.user.id, row.lastSeenAt]));
+	const liveCount = memberRows.filter((row) => isLive(row.user.id, row.lastSeenAt)).length;
 
 	const states = await Promise.all(
 		members.map(async (member) => {
@@ -72,6 +90,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 				avatar: member.avatarUrl,
 				isHost: member.id === room.createdBy,
 				isMe: member.id === viewer.id,
+				live: isLive(member.id, lastSeenByUser.get(member.id) ?? null),
 				now: (now?.track ? now : fallback) as MemberNow,
 			};
 		}),
@@ -85,6 +104,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 	return NextResponse.json({
 		room: { id: room.id, name: room.name },
 		viewerIsMember,
+		liveCount,
 		inviteUrl,
 		members: states,
 	});

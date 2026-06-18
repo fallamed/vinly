@@ -11,12 +11,14 @@ type Member = {
 	avatar: string | null;
 	isHost: boolean;
 	isMe: boolean;
+	live: boolean;
 	now: (NowPlaying & { lastKnown?: boolean }) | null;
 };
 
 type RoomState = {
 	room: { id: string; name: string };
 	viewerIsMember: boolean;
+	liveCount: number;
 	inviteUrl: string | null;
 	members: Member[];
 };
@@ -110,6 +112,13 @@ export function RoomView({
 					<h1 className="text-3xl font-semibold vinly-title-glow">{roomName}</h1>
 					<p className="text-sm text-[#8A94B8]">
 						{state ? `${state.members.length} sul piatto` : "carico la stanza..."}
+						{state && (
+							<span className="text-[#4DD8E6]">
+								{" · "}
+								<span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4DD8E6] mr-1 align-middle animate-pulse" />
+								{state.liveCount} live
+							</span>
+						)}
 						{!isMember && <span className="text-[#E64DA8]"> · sei spettatore</span>}
 					</p>
 				</div>
@@ -193,6 +202,12 @@ export function RoomView({
 						>
 							{member.isHost && <span aria-hidden className="vinly-host-star">★</span>}
 							<p className="relative text-sm text-[#8A94B8]">
+								<span
+									className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle ${
+										member.live ? "bg-[#4DD8E6] animate-pulse" : "bg-[#3A4466]"
+									}`}
+									title={member.live ? "online" : "offline"}
+								/>
 								{member.isHost && <span className="text-[#E64DA8] mr-1">★</span>}
 								{member.isMe ? "Tu" : member.name}
 								{member.now && (
