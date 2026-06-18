@@ -37,6 +37,8 @@ export function RoomView({
 	const [savedUri, setSavedUri] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [syncedUri, setSyncedUri] = useState<string | null>(null);
+	const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
 	useEffect(() => {
 		let stopped = false;
@@ -58,7 +60,7 @@ export function RoomView({
 		}
 
 		poll();
-		const id = setInterval(poll, 25000);
+		const id = setInterval(poll, 15000);
 		return () => {
 			stopped = true;
 			clearInterval(id);
@@ -92,6 +94,27 @@ export function RoomView({
 		if (res.ok) {
 			setSavedUri(track.uri);
 			setTimeout(() => setSavedUri(null), 2000);
+		}
+	}
+
+	// Sync puntuale: fai partire sul tuo Spotify la traccia dell'altro,
+	// dal punto in cui si trova adesso (una sola chiamata).
+	async function syncTo(member: Member) {
+		const n = member.now;
+		if (!n?.track) return;
+		const positionMs = n.playing ? n.progressMs + (Date.now() - n.fetchedAt) : n.progressMs;
+		const res = await fetch("/api/player", {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ action: "play", uri: n.track.uri, positionMs: Math.round(positionMs) }),
+		});
+		if (res.ok) {
+			setSyncedUri(n.track.uri);
+			setTimeout(() => setSyncedUri(null), 2500);
+		} else {
+			const json = (await res.json().catch(() => null)) as { message?: string } | null;
+			setSyncMsg(json?.message ?? "sync non riuscito");
+			setTimeout(() => setSyncMsg(null), 4000);
 		}
 	}
 
@@ -182,6 +205,7 @@ export function RoomView({
 			</div>
 
 			{error && <p className="text-red-400 text-sm">{error}</p>}
+			{syncMsg && <p className="text-[#E64DA8] text-sm">{syncMsg}</p>}
 
 			<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
 				{state?.members.map((member, idx) => {
@@ -243,12 +267,22 @@ export function RoomView({
 										<p className="font-medium leading-tight">{track.name}</p>
 										<p className="text-xs text-[#8A94B8] mt-1">{track.artists}</p>
 									</div>
-									<button
-										onClick={() => saveDisc(member)}
-										className={`relative rounded-full border ${tone.border} ${tone.text} ${tone.hover} text-xs px-4 py-1.5`}
-									>
-										{savedUri === track.uri ? "Nello scaffale ✓" : "💿 Salva il disco"}
-									</button>
+									<div className="relative flex flex-col items-center gap-2">
+										<button
+											onClick={() => saveDisc(member)}
+											className={`rounded-full border ${tone.border} ${tone.text} ${tone.hover} text-xs px-4 py-1.5`}
+										>
+											{savedUri === track.uri ? "Nello scaffale ✓" : "💿 Salva il disco"}
+										</button>
+										{!member.isMe && playing && (
+											<button
+												onClick={() => syncTo(member)}
+												className="rounded-full bg-[#4DD8E6] text-[#04343C] text-xs font-medium px-4 py-1.5 hover:opacity-90"
+											>
+												{syncedUri === track.uri ? "In sync ✓" : "▶ Ascolta con " + member.name}
+											</button>
+										)}
+									</div>
 								</>
 							) : (
 								<>
