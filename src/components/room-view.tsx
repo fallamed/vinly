@@ -97,12 +97,12 @@ export function RoomView({
 		}
 	}
 
-	// Sync puntuale: fai partire sul tuo Spotify la traccia dell'altro,
-	// dal punto in cui si trova adesso (una sola chiamata).
+	// Sync puntuale: fai partire sul tuo Spotify la traccia dell'altro.
+	// Se sta ascoltando parte dal punto attuale, altrimenti dall'inizio.
 	async function syncTo(member: Member) {
 		const n = member.now;
 		if (!n?.track) return;
-		const positionMs = n.playing ? n.progressMs + (Date.now() - n.fetchedAt) : n.progressMs;
+		const positionMs = n.playing ? n.progressMs + (Date.now() - n.fetchedAt) : 0;
 		const res = await fetch("/api/player", {
 			method: "PUT",
 			headers: { "Content-Type": "application/json" },
@@ -274,12 +274,16 @@ export function RoomView({
 										>
 											{savedUri === track.uri ? "Nello scaffale ✓" : "💿 Salva il disco"}
 										</button>
-										{!member.isMe && playing && (
+										{!member.isMe && (
 											<button
 												onClick={() => syncTo(member)}
 												className="rounded-full bg-[#4DD8E6] text-[#04343C] text-xs font-medium px-4 py-1.5 hover:opacity-90"
 											>
-												{syncedUri === track.uri ? "In sync ✓" : "▶ Ascolta con " + member.name}
+												{syncedUri === track.uri
+													? "In sync ✓"
+													: playing
+														? "▶ Ascolta con " + member.name
+														: "▶ Riparti da capo"}
 											</button>
 										)}
 									</div>
