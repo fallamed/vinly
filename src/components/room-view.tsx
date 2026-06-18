@@ -67,6 +67,13 @@ export function RoomView({
 
 	const isHost = state?.members.find((m) => m.isMe)?.isHost ?? false;
 
+	function liveLabel(count: number) {
+		if (count <= 1) return "non c'è nessun altro qui";
+		if (count === 2) return "siete in due";
+		if (count === 3) return "siete in tre";
+		return `siete in ${count}`;
+	}
+
 	async function saveDisc(member: Member) {
 		const track = member.now?.track;
 		if (!track) return;
@@ -116,7 +123,7 @@ export function RoomView({
 							<span className="text-[#4DD8E6]">
 								{" · "}
 								<span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4DD8E6] mr-1 align-middle animate-pulse" />
-								{state.liveCount} live
+								{liveLabel(state.liveCount)}
 							</span>
 						)}
 						{!isMember && <span className="text-[#E64DA8]"> · sei spettatore</span>}
