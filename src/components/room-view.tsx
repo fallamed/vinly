@@ -39,20 +39,28 @@ export function RoomView({
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const [syncedUri, setSyncedUri] = useState<string | null>(null);
 	const [syncMsg, setSyncMsg] = useState<string | null>(null);
+	const [canSync, setCanSync] = useState(false);
 
 	useEffect(() => {
 		let stopped = false;
 
 		async function poll() {
 			try {
-				const res = await fetch(`/api/rooms/${roomId}/state`);
-				const json = (await res.json()) as RoomState & { error?: string };
+				const [roomRes, playerRes] = await Promise.all([
+					fetch(`/api/rooms/${roomId}/state`),
+					fetch("/api/player"),
+				]);
 				if (stopped) return;
-				if (res.ok) {
+				const json = (await roomRes.json()) as RoomState & { error?: string };
+				if (roomRes.ok) {
 					setState(json);
 					setError(null);
 				} else {
-					setError(json.error ?? `errore ${res.status}`);
+					setError(json.error ?? `errore ${roomRes.status}`);
+				}
+				if (playerRes.ok) {
+					const p = (await playerRes.json()) as { isPremium?: boolean; hasDevice?: boolean };
+					setCanSync(Boolean(p.isPremium && p.hasDevice));
 				}
 			} catch {
 				if (!stopped) setError("errore di rete");
@@ -277,13 +285,14 @@ export function RoomView({
 										{!member.isMe && (
 											<button
 												onClick={() => syncTo(member)}
-												className="rounded-full bg-[#4DD8E6] text-[#04343C] text-xs font-medium px-4 py-1.5 hover:opacity-90"
+												disabled={!canSync}
+												className="rounded-full bg-[#4DD8E6] text-[#04343C] text-xs font-medium px-4 py-1.5 enabled:hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
 											>
 												{syncedUri === track.uri
 													? "In sync ✓"
 													: playing
-														? "▶ Ascolta con " + member.name
-														: "▶ Riparti da capo"}
+														? "▶ Sync"
+														: "▶ Ascolta questa traccia"}
 											</button>
 										)}
 									</div>
