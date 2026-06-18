@@ -98,44 +98,58 @@ export function PlayerBar() {
 		if (ok) setTimeout(load, 500);
 	}
 
-	// La barra appare solo se sei Premium e c'è una traccia: niente ingombro a vuoto.
-	if (!state?.isPremium || !track) return null;
+	// Niente da mostrare solo se non loggato / stato non ancora caricato.
+	if (!state) return null;
+
+	// Comandi disattivati se manca Premium o non c'è una traccia (nessun device attivo).
+	const disabled = !state.isPremium || !track;
+	const notice = !state.isPremium
+		? "Serve Spotify Premium per controllare la riproduzione da qui."
+		: !track
+			? "Nessun dispositivo Spotify attivo: apri Spotify su un dispositivo per usare i controlli."
+			: null;
+	const durationMs = track?.durationMs ?? 0;
 
 	return (
 		<>
 			<div className="h-24" aria-hidden />
 			<div className="fixed bottom-0 inset-x-0 z-50 border-t border-[#232A45] bg-[#0B0E1A]/95 backdrop-blur">
 				<div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-					{track.coverUrl ? (
+					{track?.coverUrl ? (
 						// eslint-disable-next-line @next/next/no-img-element
 						<img src={track.coverUrl} alt={track.album} className="w-12 h-12 rounded-md object-cover shrink-0" />
 					) : (
-						<div className="w-12 h-12 rounded-md bg-[#232A45] shrink-0" />
+						<div className="w-12 h-12 rounded-md bg-[#232A45] shrink-0 flex items-center justify-center text-[#3A4466]">
+							♪
+						</div>
 					)}
 
 					<div className="min-w-0 hidden sm:block w-44 shrink-0">
-						<p className="text-sm font-medium truncate">{track.name}</p>
-						<p className="text-xs text-[#8A94B8] truncate">{track.artists}</p>
+						<p className="text-sm font-medium truncate">{track?.name ?? "Niente in riproduzione"}</p>
+						<p className="text-xs text-[#8A94B8] truncate">{track?.artists ?? "—"}</p>
 					</div>
 
 					<div className="flex items-center gap-3 shrink-0">
 						<button
 							onClick={() => command("previous").then((ok) => ok && setTimeout(load, 500))}
-							className="text-[#8A94B8] hover:text-[#E6EAF5] text-lg"
+							disabled={disabled}
+							className="text-[#8A94B8] enabled:hover:text-[#E6EAF5] text-lg disabled:opacity-30 disabled:cursor-not-allowed"
 							aria-label="Precedente"
 						>
 							⏮
 						</button>
 						<button
 							onClick={togglePlay}
-							className="w-9 h-9 rounded-full bg-[#4DD8E6] text-[#04343C] flex items-center justify-center hover:opacity-90"
+							disabled={disabled}
+							className="w-9 h-9 rounded-full bg-[#4DD8E6] text-[#04343C] flex items-center justify-center enabled:hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
 							aria-label={state.playing ? "Pausa" : "Play"}
 						>
 							{state.playing ? "⏸" : "▶"}
 						</button>
 						<button
 							onClick={() => command("next").then((ok) => ok && setTimeout(load, 500))}
-							className="text-[#8A94B8] hover:text-[#E6EAF5] text-lg"
+							disabled={disabled}
+							className="text-[#8A94B8] enabled:hover:text-[#E6EAF5] text-lg disabled:opacity-30 disabled:cursor-not-allowed"
 							aria-label="Successiva"
 						>
 							⏭
@@ -147,18 +161,23 @@ export function PlayerBar() {
 						<input
 							type="range"
 							min={0}
-							max={track.durationMs || 0}
-							value={Math.min(displayedMs, track.durationMs || 0)}
+							max={durationMs}
+							value={Math.min(displayedMs, durationMs)}
+							disabled={disabled}
 							onChange={(e) => setDragMs(Number(e.target.value))}
 							onPointerUp={(e) => commitSeek(Number((e.target as HTMLInputElement).value))}
 							onKeyUp={(e) => commitSeek(Number((e.target as HTMLInputElement).value))}
-							className="flex-1 accent-[#4DD8E6] cursor-pointer"
+							className="flex-1 accent-[#4DD8E6] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 							aria-label="Posizione"
 						/>
-						<span className="text-[10px] text-[#8A94B8] tabular-nums w-9">{fmt(track.durationMs)}</span>
+						<span className="text-[10px] text-[#8A94B8] tabular-nums w-9">{fmt(durationMs)}</span>
 					</div>
 				</div>
-				{hint && <p className="text-center text-xs text-[#E64DA8] pb-2 px-4">{hint}</p>}
+				{(hint ?? notice) && (
+					<p className="text-center text-xs text-[#8A94B8] pb-2 px-4">
+						<span className={hint ? "text-[#E64DA8]" : undefined}>{hint ?? notice}</span>
+					</p>
+				)}
 			</div>
 		</>
 	);
