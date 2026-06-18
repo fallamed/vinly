@@ -26,6 +26,12 @@ export function TopBar({ user }: { user: DbUser }) {
 						</span>
 					)}
 				</Link>
+				<a
+					href="/api/auth/logout"
+					className="text-xs text-[#8A94B8] hover:text-[#E64DA8] transition-colors"
+				>
+					Esci
+				</a>
 			</nav>
 		</header>
 	);
