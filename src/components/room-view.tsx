@@ -111,15 +111,17 @@ export function RoomView({
 		const n = member.now;
 		if (!n?.track) return;
 		const positionMs = n.playing ? n.progressMs + (Date.now() - n.fetchedAt) : 0;
+		// Feedback ottimistico: segna subito come "in sync", annulla solo se fallisce.
+		setSyncedUri(n.track.uri);
 		const res = await fetch("/api/player", {
 			method: "PUT",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ action: "play", uri: n.track.uri, positionMs: Math.round(positionMs) }),
 		});
 		if (res.ok) {
-			setSyncedUri(n.track.uri);
 			setTimeout(() => setSyncedUri(null), 2500);
 		} else {
+			setSyncedUri(null);
 			const json = (await res.json().catch(() => null)) as { message?: string } | null;
 			setSyncMsg(json?.message ?? "sync non riuscito");
 			setTimeout(() => setSyncMsg(null), 4000);
